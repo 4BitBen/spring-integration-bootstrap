@@ -4,9 +4,9 @@
        xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
        xmlns:rabbit="http://www.springframework.org/schema/rabbit"
        xsi:schemaLocation="
-                  http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
-                  http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
-                  http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd">
+                  http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                  http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+                  http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
     <bean id="myCustomEvent.publisher" class="com.example.messaging.MyCustomEventPublisher">
         <!-- Wire the event to spring -->
         <constructor-arg>
@@ -14,39 +14,37 @@
         </constructor-arg>
     </bean>
 
-    <!--<beans profile="DataVMStack">-->
+    <beans profile="Spring-Integration">
         <!-- Wire spring eventing to a spring integration message channel -->
         <bean class="org.springframework.integration.event.inbound.ApplicationEventListeningMessageProducer">
             <property name="outputChannel" ref="amqp.exampleChannel"/>
             <property name="eventTypes" value="com.example.messaging.spring.event.MyCustomEventApplicationEvent"/>
         </bean>
-    <!--</beans>-->
+    </beans>
 
-    <!--<beans profile="DataVMStack-AMQP">-->
+    <beans profile="Spring-Integration-AMQP">
         <!-- Wire spring integration message channel to AMQP -->
         <!-- TODO: Define the Exchange and queue -->
         <int-amqp:outbound-channel-adapter id="amqp.exampleChannel" amqp-template="amqp.template" routing-key="springIntegrationExampleQueue"/>
-    <!--</beans>-->
 
-    <!--<beans profile="DataVMStack-RabbitMQ">-->
+        <bean id="myCustomEvent.messageConverter" class="com.example.messaging.spring.amqp.MyCustomEventApplicationEventMessageConverter">
+            <constructor-arg>
+                <bean class="org.springframework.amqp.support.converter.SimpleMessageConverter"/>
+            </constructor-arg>
+            <constructor-arg>
+                <bean class="com.example.messaging.JacksonMapToJsonStringConverter">
+                    <constructor-arg>
+                        <bean class="org.codehaus.jackson.map.ObjectMapper"/>
+                    </constructor-arg>
+                </bean>
+            </constructor-arg>
+        </bean>
+    </beans>
+
+    <beans profile="RabbitMQ">
         <!-- AMQP Channel to RabbitMQ -->
         <!-- TODO: Define the host/port -->
         <rabbit:connection-factory id="amqp.connectionFactory"/>
         <rabbit:template id="amqp.template" connection-factory="amqp.connectionFactory" message-converter="myCustomEvent.messageConverter"/>
-    <!--</beans>-->
-
-    <bean id="myCustomEvent.messageConverter" class="com.example.messaging.spring.amqp.MyCustomEventApplicationEventMessageConverter">
-        <constructor-arg>
-            <bean class="org.springframework.amqp.support.converter.SimpleMessageConverter"/>
-        </constructor-arg>
-        <constructor-arg>
-            <bean class="com.example.messaging.JacksonMapToJsonStringConverter">
-                <constructor-arg>
-                    <bean class="org.codehaus.jackson.map.ObjectMapper"/>
-                </constructor-arg>
-            </bean>
-        </constructor-arg>
-    </bean>
-
-
+    </beans>
 </beans>
